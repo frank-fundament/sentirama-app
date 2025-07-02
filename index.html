@@ -7,7 +7,6 @@
     <meta name="description" content="A gentle space to express and understand your emotions, helping you build better relationships with yourself and others.">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
@@ -24,9 +23,10 @@
 <body>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script>
         const { useState } = React;
         const { Heart, TrendingUp, Clock, MapPin, User, Plus, BarChart3, ChevronRight } = lucide;
+        const { createElement: h } = React;
 
         const SentiramaApp = () => {
             const [currentView, setCurrentView] = useState('onboarding');
@@ -134,21 +134,20 @@
 
             // Onboarding View
             if (currentView === 'onboarding') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
-                    React.createElement('div', { className: "max-w-md mx-auto min-h-screen" },
-                        React.createElement('div', { className: "p-8" },
-                            React.createElement('div', { className: "text-center space-y-8" },
-                                React.createElement('div', { className: "text-8xl mb-6" }, '🌱'),
-                                React.createElement('h1', { className: "text-4xl font-light text-gray-700 mb-4" }, 'Welcome to Sentirama'),
-                                React.createElement('p', { className: "text-gray-600 text-lg leading-relaxed mb-8" },
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "text-center space-y-8" },
+                                h('div', { className: "text-8xl mb-6" }, '🌱'),
+                                h('h1', { className: "text-4xl font-light text-gray-700 mb-4" }, 'Welcome to Sentirama'),
+                                h('p', { className: "text-gray-600 text-lg leading-relaxed mb-8" },
                                     'A gentle space to express and understand your emotions, helping you build better relationships with yourself and others.'
                                 ),
-                                
-                                React.createElement('div', { className: "bg-white/30 backdrop-blur-sm p-8 rounded-3xl space-y-6" },
-                                    React.createElement('h2', { className: "text-2xl font-light text-gray-700" }, "We'd love to personalize your experience"),
-                                    React.createElement('div', null,
-                                        React.createElement('label', { className: "block text-gray-700 mb-3 text-lg font-light" }, 'What should we call you?'),
-                                        React.createElement('input', {
+                                h('div', { className: "bg-white/30 backdrop-blur-sm p-8 rounded-3xl space-y-6" },
+                                    h('h2', { className: "text-2xl font-light text-gray-700" }, "We'd love to personalize your experience"),
+                                    h('div', null,
+                                        h('label', { className: "block text-gray-700 mb-3 text-lg font-light" }, 'What should we call you?'),
+                                        h('input', {
                                             type: "text",
                                             placeholder: "Your first name",
                                             value: userName,
@@ -158,25 +157,24 @@
                                             maxLength: "30"
                                         })
                                     ),
-                                    
-                                    React.createElement('div', { className: "space-y-4" },
-                                        React.createElement('label', { className: "flex items-start space-x-3 text-left" },
-                                            React.createElement('input', {
+                                    h('div', { className: "space-y-4" },
+                                        h('label', { className: "flex items-start space-x-3 text-left" },
+                                            h('input', {
                                                 type: "checkbox",
                                                 checked: consentAccepted,
                                                 onChange: (e) => setConsentAccepted(e.target.checked),
                                                 className: "mt-1 w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
                                             }),
-                                            React.createElement('span', { className: "text-sm text-gray-600" },
+                                            h('span', { className: "text-sm text-gray-600" },
                                                 'I agree to the ',
-                                                React.createElement('a', {
+                                                h('a', {
                                                     href: "https://www.fundament.es/sentirama-conditions",
                                                     target: "_blank",
                                                     rel: "noopener noreferrer",
                                                     className: "text-rose-600 underline hover:text-rose-700"
                                                 }, 'Terms of Service'),
                                                 ' and ',
-                                                React.createElement('a', {
+                                                h('a', {
                                                     href: "https://www.fundament.es/sentirama-privacy",
                                                     target: "_blank",
                                                     rel: "noopener noreferrer",
@@ -185,8 +183,7 @@
                                             )
                                         )
                                     ),
-                                    
-                                    userName.trim() && consentAccepted && React.createElement('button', {
+                                    userName.trim() && consentAccepted && h('button', {
                                         onClick: saveUserName,
                                         className: "bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-4 px-8 rounded-2xl font-light text-lg transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
                                     }, `Let's begin, ${userName}! ✨`)
@@ -199,49 +196,46 @@
 
             // Home View
             if (currentView === 'home') {
-                return React.createElement('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
-                    React.createElement('div', { className: "max-w-md mx-auto min-h-screen" },
-                        React.createElement('div', { className: "p-8" },
-                            React.createElement('div', { className: "text-center space-y-8" },
-                                React.createElement('div', { className: "text-7xl mb-6" }, '🌸'),
-                                React.createElement('h1', { className: "text-3xl font-light text-gray-700 mb-3" },
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "text-center space-y-8" },
+                                h('div', { className: "text-7xl mb-6" }, '🌸'),
+                                h('h1', { className: "text-3xl font-light text-gray-700 mb-3" },
                                     userName ? getTimeBasedGreeting(userName) : 'Welcome to Sentirama'
                                 ),
-                                React.createElement('p', { className: "text-gray-500 text-lg" },
+                                h('p', { className: "text-gray-500 text-lg" },
                                     userName ? getPersonalizedMessage(userName) : 'A gentle space for emotional awareness'
                                 ),
-
-                                React.createElement('div', { className: "space-y-4" },
-                                    React.createElement('button', {
+                                h('div', { className: "space-y-4" },
+                                    h('button', {
                                         onClick: () => setCurrentView('emotion'),
                                         className: "w-full bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-6 px-8 rounded-2xl font-light text-xl flex items-center justify-center space-x-3 transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
                                     },
-                                        React.createElement(Heart, { className: "w-6 h-6" }),
-                                        React.createElement('span', null, 'Check in with your emotions')
+                                        h(Heart, { className: "w-6 h-6" }),
+                                        h('span', null, 'Check in with your emotions')
                                     ),
-
-                                    React.createElement('button', {
+                                    h('button', {
                                         onClick: () => setCurrentView('insights'),
                                         className: "w-full bg-gradient-to-br from-purple-400 to-indigo-400 hover:from-purple-500 hover:to-indigo-500 text-white py-6 px-8 rounded-2xl font-light text-xl flex items-center justify-center space-x-3 transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
                                     },
-                                        React.createElement(BarChart3, { className: "w-6 h-6" }),
-                                        React.createElement('span', null, 'View your emotional journey')
+                                        h(BarChart3, { className: "w-6 h-6" }),
+                                        h('span', null, 'View your emotional journey')
                                     )
                                 ),
-
-                                emotionEntries.length > 0 && React.createElement('div', { className: "bg-white/30 backdrop-blur-sm p-6 rounded-3xl" },
-                                    React.createElement('h3', { className: "text-lg font-light text-gray-700 mb-4" }, 'Recent check-ins'),
-                                    React.createElement('div', { className: "space-y-3" },
+                                emotionEntries.length > 0 && h('div', { className: "bg-white/30 backdrop-blur-sm p-6 rounded-3xl" },
+                                    h('h3', { className: "text-lg font-light text-gray-700 mb-4" }, 'Recent check-ins'),
+                                    h('div', { className: "space-y-3" },
                                         emotionEntries.slice(0, 3).map(entry =>
-                                            React.createElement('div', {
+                                            h('div', {
                                                 key: entry.id,
                                                 className: "flex items-center justify-between bg-white/50 p-3 rounded-xl"
                                             },
-                                                React.createElement('div', { className: "text-left" },
-                                                    React.createElement('p', { className: "font-medium text-gray-800" }, entry.emotion),
-                                                    React.createElement('p', { className: "text-sm text-gray-600" }, entry.timestamp.toLocaleDateString())
+                                                h('div', { className: "text-left" },
+                                                    h('p', { className: "font-medium text-gray-800" }, entry.emotion),
+                                                    h('p', { className: "text-sm text-gray-600" }, entry.timestamp.toLocaleDateString())
                                                 ),
-                                                React.createElement('span', {
+                                                h('span', {
                                                     className: `px-3 py-1 rounded-full text-xs font-medium ${
                                                         entry.category === 'positive' ? 'bg-green-100 text-green-800' :
                                                         entry.category === 'neutral' ? 'bg-blue-100 text-blue-800' :
@@ -252,11 +246,10 @@
                                         )
                                     )
                                 ),
-
-                                React.createElement('div', { className: "text-center pt-6 space-y-2" },
-                                    React.createElement('p', { className: "text-sm text-gray-600 font-light" },
+                                h('div', { className: "text-center pt-6 space-y-2" },
+                                    h('p', { className: "text-sm text-gray-600 font-light" },
                                         'A project by ',
-                                        React.createElement('a', {
+                                        h('a', {
                                             href: "https://www.fundament.es/sentirama",
                                             target: "_blank",
                                             rel: "noopener noreferrer",
@@ -264,15 +257,15 @@
                                         }, 'fundament'),
                                         ' • Designing better coexistence'
                                     ),
-                                    React.createElement('p', { className: "text-xs text-gray-500" },
-                                        React.createElement('a', {
+                                    h('p', { className: "text-xs text-gray-500" },
+                                        h('a', {
                                             href: "https://www.fundament.es/sentirama-privacy",
                                             target: "_blank",
                                             rel: "noopener noreferrer",
                                             className: "hover:text-gray-700 underline"
                                         }, 'Privacy Policy'),
                                         ' • ',
-                                        React.createElement('a', {
+                                        h('a', {
                                             href: "https://www.fundament.es/sentirama-conditions",
                                             target: "_blank",
                                             rel: "noopener noreferrer",
@@ -286,13 +279,382 @@
                 );
             }
 
-            // Continue with other views...
-            // For brevity, I'll include the key views. The full implementation would include all views.
+            // Emotion Selection View
+            if (currentView === 'emotion') {
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "space-y-8" },
+                                h('div', { className: "text-center mb-12" },
+                                    h('div', { className: "text-7xl mb-6" }, '🌸'),
+                                    h('h2', { className: "text-3xl font-light text-gray-700 mb-3" },
+                                        userName ? `${userName}, how are you feeling?` : 'How are you feeling?'
+                                    ),
+                                    h('p', { className: "text-gray-500 text-lg" },
+                                        'Take a gentle moment to check in with yourself'
+                                    )
+                                ),
+                                ...Object.entries(emotionCategories).map(([category, { color, emotions }]) =>
+                                    h('div', { key: category, className: "space-y-4" },
+                                        h('h3', { className: "text-xl font-light text-gray-600 capitalize mb-6" }, category),
+                                        h('div', { className: "grid grid-cols-2 gap-4" },
+                                            ...emotions.map(emotion =>
+                                                h('button', {
+                                                    key: emotion.name,
+                                                    onClick: () => setSelectedEmotion(emotion.name),
+                                                    className: `p-6 rounded-2xl text-white font-light text-lg transition-all duration-300 transform hover:scale-110 hover:rotate-1 active:scale-95 shadow-lg hover:shadow-2xl ${
+                                                        selectedEmotion === emotion.name 
+                                                            ? `bg-gradient-to-br ${color} ring-4 ring-white/50 scale-105 shadow-xl rotate-1` 
+                                                            : `bg-gradient-to-br ${color}`
+                                                    }`
+                                                }, emotion.name)
+                                            )
+                                        )
+                                    )
+                                ),
+                                h('div', { className: "flex space-x-4 pt-8" },
+                                    h('button', {
+                                        onClick: () => setCurrentView('home'),
+                                        className: "w-full bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold"
+                                    }, 'Back to home')
+                                ),
+                                h('div', { className: "text-center pt-6 space-y-2" },
+                                    h('p', { className: "text-sm text-gray-600 font-light" },
+                                        'A project by ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "font-normal text-gray-700 hover:text-gray-800 underline"
+                                        }, 'fundament'),
+                                        ' • Designing better coexistence'
+                                    ),
+                                    h('p', { className: "text-xs text-gray-500" },
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-privacy",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline"
+                                        }, 'Privacy Policy'),
+                                        ' • ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-conditions",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline ml-1"
+                                        }, 'Terms of Service')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
 
-            return React.createElement('div', null, 'Loading...');
+            // Insights View
+            if (currentView === 'insights') {
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "space-y-6" },
+                                h('div', { className: "text-center" },
+                                    h('button', {
+                                        onClick: () => setCurrentView('home'),
+                                        className: "mb-4 text-gray-600 hover:text-gray-800"
+                                    }, '← Back to home'),
+                                    h('h2', { className: "text-2xl font-bold text-gray-800 mb-2" },
+                                        userName ? `Your emotional journey, ${userName}` : 'Your emotional insights'
+                                    ),
+                                    h('p', { className: "text-gray-600" },
+                                        `Discover patterns in your ${emotionEntries.length} check-ins`
+                                    )
+                                ),
+                                emotionEntries.length === 0 ? 
+                                    h('div', { className: "text-center py-8" },
+                                        h(BarChart3, { className: "w-16 h-16 text-gray-400 mx-auto mb-4" }),
+                                        h('p', { className: "text-gray-500" }, 'No entries yet. Start tracking your emotions to see insights!'),
+                                        h('button', {
+                                            onClick: () => setCurrentView('emotion'),
+                                            className: "mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-6 rounded-lg font-semibold"
+                                        }, 'Add your first entry')
+                                    ) :
+                                    h('div', { className: "space-y-6" },
+                                        h('div', { className: "grid grid-cols-3 gap-3" },
+                                            h('div', { className: "bg-white p-4 rounded-xl text-center border border-gray-200" },
+                                                h('p', { className: "text-2xl font-bold text-gray-800" }, emotionEntries.length),
+                                                h('p', { className: "text-sm text-gray-600" }, 'Total entries')
+                                            ),
+                                            h('div', { className: "bg-white p-4 rounded-xl text-center border border-gray-200" },
+                                                h('p', { className: "text-2xl font-bold text-green-600" },
+                                                    emotionEntries.filter(e => e.category === 'positive').length
+                                                ),
+                                                h('p', { className: "text-sm text-gray-600" }, 'Positive')
+                                            ),
+                                            h('div', { className: "bg-white p-4 rounded-xl text-center border border-gray-200" },
+                                                h('p', { className: "text-2xl font-bold text-orange-600" },
+                                                    emotionEntries.filter(e => e.category === 'challenging').length
+                                                ),
+                                                h('p', { className: "text-sm text-gray-600" }, 'Challenging')
+                                            )
+                                        ),
+                                        h('div', { className: "bg-white p-4 rounded-xl border border-gray-200" },
+                                            h('h3', { className: "font-semibold text-gray-800 mb-3 flex items-center" },
+                                                h(Clock, { className: "w-5 h-5 mr-2 text-green-500" }),
+                                                'Recent entries'
+                                            ),
+                                            h('div', { className: "space-y-3" },
+                                                ...emotionEntries.slice(0, 10).map(entry =>
+                                                    h('div', {
+                                                        key: entry.id,
+                                                        className: "border-l-4 border-blue-400 pl-3 py-3 hover:bg-gray-50 rounded-r-lg transition-colors"
+                                                    },
+                                                        h('div', { className: "flex justify-between items-start" },
+                                                            h('div', { className: "flex-1" },
+                                                                h('div', { className: "flex items-center space-x-2 mb-1" },
+                                                                    h('p', { className: "font-medium text-gray-800" }, entry.emotion),
+                                                                    h('span', {
+                                                                        className: `px-2 py-1 rounded-full text-xs font-medium ${
+                                                                            entry.category === 'positive' ? 'bg-green-100 text-green-800' :
+                                                                            entry.category === 'neutral' ? 'bg-blue-100 text-blue-800' :
+                                                                            'bg-orange-100 text-orange-800'
+                                                                        }`
+                                                                    }, entry.category)
+                                                                ),
+                                                                h('div', { className: "text-sm text-gray-600 space-y-1" },
+                                                                    h('p', null, `${entry.timestamp.toLocaleDateString()} at ${entry.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`),
+                                                                    entry.context.activity && h('p', null,
+                                                                        h('span', { className: "font-medium" }, 'Activity: '),
+                                                                        entry.context.activity
+                                                                    )
+                                                                )
+                                                            )
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        )
+                                    ),
+                                h('div', { className: "text-center pt-6 space-y-2" },
+                                    h('p', { className: "text-sm text-gray-600 font-light" },
+                                        'A project by ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "font-normal text-gray-700 hover:text-gray-800 underline"
+                                        }, 'fundament'),
+                                        ' • Designing better coexistence'
+                                    ),
+                                    h('p', { className: "text-xs text-gray-500" },
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-privacy",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline"
+                                        }, 'Privacy Policy'),
+                                        ' • ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-conditions",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline ml-1"
+                                        }, 'Terms of Service')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            return null;
         };
 
         ReactDOM.render(React.createElement(SentiramaApp), document.getElementById('root'));
     </script>
 </body>
 </html>
+                                        className: "flex-1 bg-gradient-to-br from-rose-100 to-orange-100 hover:from-rose-200 hover:to-orange-200 text-gray-600 py-4 rounded-2xl font-light text-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:rotate-1"
+                                    },
+                                        h('div', { className: "w-6 h-0.5 bg-gray-500 rounded-full" }),
+                                        h('span', null, 'Back')
+                                    ),
+                                    selectedEmotion && h('button', {
+                                        onClick: () => setCurrentView('context'),
+                                        className: "flex-2 bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-4 px-8 rounded-2xl font-light text-lg flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:rotate-1"
+                                    },
+                                        h('span', null, `Continue with ${selectedEmotion}`),
+                                        h(ChevronRight, { className: "w-5 h-5" })
+                                    )
+                                ),
+                                h('div', { className: "text-center pt-6 space-y-2" },
+                                    h('p', { className: "text-sm text-gray-600 font-light" },
+                                        'A project by ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "font-normal text-gray-700 hover:text-gray-800 underline"
+                                        }, 'fundament'),
+                                        ' • Designing better coexistence'
+                                    ),
+                                    h('p', { className: "text-xs text-gray-500" },
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-privacy",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline"
+                                        }, 'Privacy Policy'),
+                                        ' • ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-conditions",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline ml-1"
+                                        }, 'Terms of Service')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            // Context View
+            if (currentView === 'context') {
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "space-y-6" },
+                                h('div', { className: "text-center mb-6" },
+                                    h('h2', { className: "text-2xl font-bold text-gray-800 mb-2" }, 'Add context'),
+                                    h('p', { className: "text-gray-600" }, 'Help us understand patterns in your emotions')
+                                ),
+                                h('div', { className: "bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-xl" },
+                                    h('div', { className: "flex items-center space-x-3" },
+                                        h(Heart, { className: "text-purple-600 w-8 h-8" }),
+                                        h('div', null,
+                                            h('p', { className: "font-semibold text-purple-800" }, `Feeling: ${selectedEmotion}`)
+                                        )
+                                    )
+                                ),
+                                h('div', { className: "space-y-4" },
+                                    h('div', null,
+                                        h('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, 'What were you doing?'),
+                                        h('input', {
+                                            type: "text",
+                                            placeholder: "Working, socializing, exercise...",
+                                            value: formData.activity,
+                                            onChange: (e) => handleInputChange('activity', e.target.value),
+                                            className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: "block text-sm font-medium text-gray-700 mb-2" },
+                                            h(MapPin, { className: "inline w-4 h-4 mr-1" }),
+                                            'Where are you?'
+                                        ),
+                                        h('input', {
+                                            type: "text",
+                                            placeholder: "Home, work, cafe, park...",
+                                            value: formData.location,
+                                            onChange: (e) => handleInputChange('location', e.target.value),
+                                            className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: "block text-sm font-medium text-gray-700 mb-2" },
+                                            h(User, { className: "inline w-4 h-4 mr-1" }),
+                                            'Who are you with?'
+                                        ),
+                                        h('input', {
+                                            type: "text",
+                                            placeholder: "Alone, family, colleagues, friends...",
+                                            value: formData.people,
+                                            onChange: (e) => handleInputChange('people', e.target.value),
+                                            className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        })
+                                    ),
+                                    h('div', null,
+                                        h('label', { className: "block text-sm font-medium text-gray-700 mb-2" }, 'Any notes? (optional)'),
+                                        h('textarea', {
+                                            placeholder: "What might have influenced this feeling?",
+                                            value: formData.notes,
+                                            onChange: (e) => handleInputChange('notes', e.target.value),
+                                            className: "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                                            rows: "3"
+                                        })
+                                    )
+                                ),
+                                h('div', { className: "flex space-x-3" },
+                                    h('button', {
+                                        onClick: () => setCurrentView('emotion'),
+                                        className: "flex-1 bg-gradient-to-br from-rose-100 to-orange-100 hover:from-rose-200 hover:to-orange-200 text-gray-600 py-3 rounded-2xl font-light flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:rotate-1"
+                                    },
+                                        h('div', { className: "w-6 h-0.5 bg-gray-500 rounded-full" }),
+                                        h('span', null, 'Back')
+                                    ),
+                                    h('button', {
+                                        onClick: saveEmotionEntry,
+                                        className: "flex-2 bg-gradient-to-br from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white py-3 px-6 rounded-2xl font-light flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:rotate-1"
+                                    },
+                                        h(Plus, { className: "w-5 h-5" }),
+                                        h('span', null, 'Save Entry')
+                                    )
+                                ),
+                                h('div', { className: "text-center pt-6 space-y-2" },
+                                    h('p', { className: "text-sm text-gray-600 font-light" },
+                                        'A project by ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "font-normal text-gray-700 hover:text-gray-800 underline"
+                                        }, 'fundament'),
+                                        ' • Designing better coexistence'
+                                    ),
+                                    h('p', { className: "text-xs text-gray-500" },
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-privacy",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline"
+                                        }, 'Privacy Policy'),
+                                        ' • ',
+                                        h('a', {
+                                            href: "https://www.fundament.es/sentirama-conditions",
+                                            target: "_blank",
+                                            rel: "noopener noreferrer",
+                                            className: "hover:text-gray-700 underline ml-1"
+                                        }, 'Terms of Service')
+                                    )
+                                )
+                            )
+                        )
+                    )
+                );
+            }
+
+            // Success View
+            if (currentView === 'success') {
+                return h('div', { className: "min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200" },
+                    h('div', { className: "max-w-md mx-auto min-h-screen" },
+                        h('div', { className: "p-8" },
+                            h('div', { className: "text-center space-y-6" },
+                                h('div', { className: "text-8xl mb-4" }, '✨'),
+                                h('h2', { className: "text-2xl font-bold text-gray-800" },
+                                    userName ? `Thank you, ${userName}!` : 'Thank you!'
+                                ),
+                                h('p', { className: "text-gray-600" },
+                                    'Your emotional check-in has been saved. Your awareness matters.'
+                                ),
+                                h('div', { className: "bg-gradient-to-r from-green-100 to-emerald-100 p-4 rounded-xl" },
+                                    h('p', { className: "text-green-800 font-medium" }, 'Building emotional awareness, one check-in at a time')
+                                ),
+                                h('div', { className: "space-y-3" },
+                                    h('button', {
+                                        onClick: () => setCurrentView('emotion'),
+                                        className: "w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold"
+                                    }, 'Add another entry'),
+                                    h('button', {
+                                        onClick: () => setCurrentView('home'),
