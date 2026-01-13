@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentirama - Emotion tracking app</title>
-    <meta name="description" content="A gentle space to express and understand your emotions, helping you build better relationships with yourself and others.">
+    <title>Sentirama - Emotion Tracking & Analysis</title>
+    <meta name="description" content="A gentle space to track, understand, and learn from your emotions over time.">
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -18,13 +19,169 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useRef } = React;
+
+        // Comprehensive emotion dictionary with meanings, effects, and insights
+        const emotionDictionary = {
+            // Positive Emotions
+            'Happy': {
+                meaning: 'A state of joy, contentment, and well-being. Happiness is a positive emotional state characterized by feelings of pleasure and satisfaction.',
+                effects: 'Increases energy levels, improves social connections, enhances creativity, strengthens immune system, and promotes overall life satisfaction.',
+                physicalSigns: 'Smiling, relaxed posture, increased energy, better sleep quality',
+                copingStrategies: 'Share your happiness with others, practice gratitude, engage in activities you enjoy, document positive moments'
+            },
+            'Grateful': {
+                meaning: 'A feeling of appreciation and thankfulness for what you have, whether tangible or intangible.',
+                effects: 'Reduces stress and depression, improves relationships, increases life satisfaction, enhances empathy, and promotes better sleep.',
+                physicalSigns: 'Warmth in chest, relaxed breathing, open body language',
+                copingStrategies: 'Keep a gratitude journal, express thanks to others, reflect on positive aspects of life, practice mindfulness'
+            },
+            'Peaceful': {
+                meaning: 'A state of tranquility and calm, free from disturbance, agitation, or stress.',
+                effects: 'Lowers blood pressure, reduces anxiety, improves focus, enhances decision-making, and supports emotional regulation.',
+                physicalSigns: 'Slow breathing, relaxed muscles, clear mind, steady heartbeat',
+                copingStrategies: 'Practice meditation, spend time in nature, engage in gentle movement, create calm environments'
+            },
+            'Confident': {
+                meaning: 'A belief in your abilities and judgment, characterized by self-assurance and certainty.',
+                effects: 'Improves performance, reduces anxiety, enhances resilience, promotes goal achievement, and strengthens leadership abilities.',
+                physicalSigns: 'Upright posture, steady voice, direct eye contact, relaxed shoulders',
+                copingStrategies: 'Acknowledge achievements, set realistic goals, practice self-compassion, build on strengths'
+            },
+            'Excited': {
+                meaning: 'A state of enthusiasm and eager anticipation about something positive.',
+                effects: 'Increases motivation, enhances creativity, improves memory formation, boosts energy, and strengthens social bonds.',
+                physicalSigns: 'Increased heart rate, heightened alertness, animated gestures, bright expression',
+                copingStrategies: 'Channel energy into productive activities, share excitement with others, plan and prepare, stay grounded'
+            },
+            'Loved': {
+                meaning: 'A feeling of being cared for, valued, and cherished by others.',
+                effects: 'Increases oxytocin levels, reduces stress, improves mental health, strengthens immune system, and enhances overall well-being.',
+                physicalSigns: 'Warmth, relaxation, comfort, sense of security',
+                copingStrategies: 'Nurture relationships, express appreciation, spend quality time with loved ones, practice self-love'
+            },
+            'Inspired': {
+                meaning: 'A state of motivation and creative energy sparked by ideas, people, or experiences.',
+                effects: 'Enhances creativity, increases productivity, improves problem-solving, boosts confidence, and promotes personal growth.',
+                physicalSigns: 'Mental clarity, increased focus, energized feeling, sense of possibility',
+                copingStrategies: 'Capture ideas immediately, engage with inspiring content, connect with creative people, take action on inspiration'
+            },
+            'Calm': {
+                meaning: 'A state of composure and ease, characterized by mental and emotional steadiness.',
+                effects: 'Reduces cortisol levels, improves clarity, enhances emotional regulation, supports better decisions, and promotes physical relaxation.',
+                physicalSigns: 'Slow breathing, relaxed muscles, clear thinking, balanced energy',
+                copingStrategies: 'Practice deep breathing, engage in calming activities, maintain routines, limit overstimulation'
+            },
+            // Neutral Emotions
+            'Thoughtful': {
+                meaning: 'A state of careful consideration and reflection about ideas, situations, or experiences.',
+                effects: 'Improves decision-making, enhances understanding, deepens relationships, promotes learning, and supports personal development.',
+                physicalSigns: 'Furrowed brow, quiet demeanor, inward focus, slower movements',
+                copingStrategies: 'Allow time for reflection, journal thoughts, discuss ideas with others, balance thinking with action'
+            },
+            'Curious': {
+                meaning: 'A desire to learn, explore, and understand new things or experiences.',
+                effects: 'Enhances learning, increases creativity, improves problem-solving, promotes growth, and strengthens neural connections.',
+                physicalSigns: 'Alert expression, forward lean, engaged eyes, exploratory behavior',
+                copingStrategies: 'Ask questions, explore new topics, maintain openness, embrace learning opportunities'
+            },
+            'Focused': {
+                meaning: 'A state of concentrated attention and mental clarity directed toward a specific task or goal.',
+                effects: 'Increases productivity, improves quality of work, reduces errors, enhances skill development, and supports goal achievement.',
+                physicalSigns: 'Steady gaze, minimal distractions, controlled movements, deep concentration',
+                copingStrategies: 'Minimize distractions, take regular breaks, set clear objectives, practice single-tasking'
+            },
+            'Reflective': {
+                meaning: 'A contemplative state involving deep thinking about past experiences, emotions, or situations.',
+                effects: 'Promotes self-awareness, supports emotional processing, enhances wisdom, improves future decisions, and deepens understanding.',
+                physicalSigns: 'Quiet demeanor, inward focus, slower pace, thoughtful expressions',
+                copingStrategies: 'Set aside reflection time, journal regularly, seek solitude, practice mindfulness'
+            },
+            'Balanced': {
+                meaning: 'A state of emotional equilibrium and harmony between different aspects of life.',
+                effects: 'Reduces stress, improves well-being, enhances resilience, supports healthy relationships, and promotes stability.',
+                physicalSigns: 'Even energy, stable mood, centered feeling, calm presence',
+                copingStrategies: 'Maintain healthy boundaries, practice self-care, prioritize what matters, stay flexible'
+            },
+            'Present': {
+                meaning: 'Being fully aware and engaged in the current moment without distraction.',
+                effects: 'Reduces anxiety, improves relationships, enhances enjoyment, increases awareness, and supports mental clarity.',
+                physicalSigns: 'Attentive posture, engaged senses, clear focus, relaxed alertness',
+                copingStrategies: 'Practice mindfulness, limit multitasking, engage senses, focus on breath'
+            },
+            'Observant': {
+                meaning: 'Paying close and careful attention to surroundings, people, and details.',
+                effects: 'Improves awareness, enhances learning, strengthens intuition, supports safety, and deepens understanding.',
+                physicalSigns: 'Alert eyes, attentive posture, scanning behavior, heightened senses',
+                copingStrategies: 'Practice active observation, take notes, ask questions, trust perceptions'
+            },
+            'Steady': {
+                meaning: 'A consistent and reliable emotional state characterized by stability and composure.',
+                effects: 'Builds trust, reduces volatility, supports decision-making, enhances reliability, and promotes consistency.',
+                physicalSigns: 'Even temperament, consistent energy, stable presence, reliable patterns',
+                copingStrategies: 'Maintain routines, practice consistency, build stable habits, stay grounded'
+            },
+            // Challenging Emotions
+            'Stressed': {
+                meaning: 'A state of mental or emotional strain resulting from demanding or adverse circumstances.',
+                effects: 'Can impair focus, disrupt sleep, weaken immune system, increase irritability, and impact physical health if chronic.',
+                physicalSigns: 'Tension, rapid heartbeat, shallow breathing, fatigue, headaches',
+                copingStrategies: 'Practice relaxation techniques, exercise regularly, prioritize tasks, seek support, establish boundaries'
+            },
+            'Sad': {
+                meaning: 'A feeling of sorrow, unhappiness, or grief, often in response to loss or disappointment.',
+                effects: 'Can lower energy, reduce motivation, affect appetite and sleep, promote withdrawal, but also supports emotional processing.',
+                physicalSigns: 'Heavy feeling, low energy, tearfulness, withdrawal, slowed movements',
+                copingStrategies: 'Allow yourself to feel, talk to someone, engage in gentle activities, practice self-compassion, seek support if persistent'
+            },
+            'Frustrated': {
+                meaning: 'A feeling of annoyance and dissatisfaction caused by obstacles, unmet expectations, or lack of progress.',
+                effects: 'Can increase tension, reduce patience, impair problem-solving, affect relationships, but can also motivate change.',
+                physicalSigns: 'Tension, clenched jaw, restlessness, irritability, agitation',
+                copingStrategies: 'Take a break, identify obstacles, adjust expectations, problem-solve systematically, practice patience'
+            },
+            'Anxious': {
+                meaning: 'A feeling of worry, nervousness, or unease about uncertain outcomes or future events.',
+                effects: 'Can disrupt concentration, affect sleep, increase physical tension, impair decision-making, and impact daily functioning.',
+                physicalSigns: 'Racing heart, sweating, restlessness, tension, difficulty concentrating',
+                copingStrategies: 'Practice deep breathing, challenge worried thoughts, focus on present, engage in calming activities, seek professional help if severe'
+            },
+            'Tired': {
+                meaning: 'A state of physical or mental exhaustion requiring rest and recovery.',
+                effects: 'Reduces performance, impairs judgment, lowers mood, weakens immune system, and affects safety and well-being.',
+                physicalSigns: 'Low energy, heavy limbs, difficulty concentrating, yawning, slowed reactions',
+                copingStrategies: 'Prioritize sleep, take breaks, reduce commitments, practice good sleep hygiene, address underlying causes'
+            },
+            'Overwhelmed': {
+                meaning: 'Feeling unable to cope with too many demands, responsibilities, or emotions at once.',
+                effects: 'Can cause paralysis, increase stress, impair decision-making, affect relationships, and reduce effectiveness.',
+                physicalSigns: 'Mental fog, physical tension, sense of drowning, difficulty prioritizing',
+                copingStrategies: 'Break tasks into smaller steps, delegate when possible, say no, seek support, practice self-care'
+            },
+            'Uncertain': {
+                meaning: 'Doubt and lack of conviction about decisions, outcomes, or the future.',
+                effects: 'Can delay decisions, increase anxiety, reduce confidence, affect planning, but can also promote careful consideration.',
+                physicalSigns: 'Hesitation, second-guessing, mental confusion, lack of clarity',
+                copingStrategies: 'Gather information, list pros and cons, trust your intuition, accept that some uncertainty is normal, take small steps'
+            },
+            'Restless': {
+                meaning: 'An inability to rest or relax, characterized by agitation and a need for movement or change.',
+                effects: 'Disrupts rest, affects focus, increases tension, impacts sleep quality, but can also signal need for change or action.',
+                physicalSigns: 'Fidgeting, pacing, inability to sit still, mental agitation, poor sleep',
+                copingStrategies: 'Engage in physical activity, identify underlying needs, practice grounding techniques, establish calming routines'
+            }
+        };
 
         const SentiramaApp = () => {
             const [currentView, setCurrentView] = useState('onboarding');
@@ -38,65 +195,102 @@
                 people: '',
                 notes: ''
             });
+            const [selectedEmotionForDict, setSelectedEmotionForDict] = useState(null);
+            const chartRefs = {
+                timeline: useRef(null),
+                distribution: useRef(null),
+                timeOfDay: useRef(null)
+            };
+            const chartInstances = useRef({});
 
             const emotionCategories = {
                 positive: {
-                    color: 'from-emerald-300 to-green-400',
+                    color: 'from-slate-200 to-slate-300',
+                    borderColor: 'border-slate-400',
                     emotions: [
-                        { name: 'Happy', description: 'Feeling joy, contentment, or pleasure' },
-                        { name: 'Grateful', description: 'Appreciative and thankful for what you have' },
-                        { name: 'Peaceful', description: 'Calm, tranquil, and free from disturbance' },
-                        { name: 'Confident', description: 'Self-assured and certain in your abilities' },
-                        { name: 'Excited', description: 'Enthusiastic and eager about something' },
-                        { name: 'Loved', description: 'Feeling cared for and valued by others' },
-                        { name: 'Inspired', description: 'Motivated and filled with creative energy' },
-                        { name: 'Calm', description: 'Relaxed, composed, and at ease' }
+                        { name: 'Happy' },
+                        { name: 'Grateful' },
+                        { name: 'Peaceful' },
+                        { name: 'Confident' },
+                        { name: 'Excited' },
+                        { name: 'Loved' },
+                        { name: 'Inspired' },
+                        { name: 'Calm' }
                     ]
                 },
                 neutral: {
-                    color: 'from-sky-300 to-blue-400',
+                    color: 'from-blue-100 to-blue-200',
+                    borderColor: 'border-blue-300',
                     emotions: [
-                        { name: 'Thoughtful', description: 'Reflective and considering things carefully' },
-                        { name: 'Curious', description: 'Interested in learning or knowing more' },
-                        { name: 'Focused', description: 'Concentrated and attentive to a task' },
-                        { name: 'Reflective', description: 'Looking back and thinking deeply about experiences' },
-                        { name: 'Balanced', description: 'In harmony and emotional equilibrium' },
-                        { name: 'Present', description: 'Aware and engaged in the current moment' },
-                        { name: 'Observant', description: 'Paying close attention to your surroundings' },
-                        { name: 'Steady', description: 'Stable, consistent, and reliable in mood' }
+                        { name: 'Thoughtful' },
+                        { name: 'Curious' },
+                        { name: 'Focused' },
+                        { name: 'Reflective' },
+                        { name: 'Balanced' },
+                        { name: 'Present' },
+                        { name: 'Observant' },
+                        { name: 'Steady' }
                     ]
                 },
                 challenging: {
-                    color: 'from-amber-300 to-orange-400',
+                    color: 'from-amber-100 to-amber-200',
+                    borderColor: 'border-amber-300',
                     emotions: [
-                        { name: 'Stressed', description: 'Feeling pressure, tension, or strain' },
-                        { name: 'Sad', description: 'Experiencing sorrow, grief, or melancholy' },
-                        { name: 'Frustrated', description: 'Annoyed by obstacles or unmet expectations' },
-                        { name: 'Anxious', description: 'Worried or uneasy about future events' },
-                        { name: 'Tired', description: 'Physically or mentally exhausted' },
-                        { name: 'Overwhelmed', description: 'Unable to cope with too much at once' },
-                        { name: 'Uncertain', description: 'Doubtful and unsure about what to expect' },
-                        { name: 'Restless', description: 'Unable to rest or relax, feeling agitated' }
+                        { name: 'Stressed' },
+                        { name: 'Sad' },
+                        { name: 'Frustrated' },
+                        { name: 'Anxious' },
+                        { name: 'Tired' },
+                        { name: 'Overwhelmed' },
+                        { name: 'Uncertain' },
+                        { name: 'Restless' }
                     ]
                 }
             };
 
-            const getTimeBasedGreeting = (name) => {
-                const hour = new Date().getHours();
-                if (hour >= 5 && hour < 12) return `Good morning, ${name} 🌅`;
-                else if (hour >= 12 && hour < 18) return `Good afternoon, ${name} ☀️`;
-                else if (hour >= 18 && hour < 22) return `Good evening, ${name} 🌆`;
-                else return `Good night, ${name} 🌙`;
-            };
+            // Load data from localStorage on mount
+            useEffect(() => {
+                const savedEntries = localStorage.getItem('sentiramaEntries');
+                const savedUserName = localStorage.getItem('sentiramaUserName');
+                const savedConsent = localStorage.getItem('sentiramaConsent');
 
-            const getPersonalizedMessage = (name) => {
-                const messages = [
-                    `How are you feeling today, ${name}?`, 
-                    `Ready for your check-in, ${name}?`, 
-                    `Time for reflection, ${name}`
-                ];
-                return messages[Math.floor(Math.random() * messages.length)];
-            };
+                if (savedEntries) {
+                    const parsed = JSON.parse(savedEntries);
+                    const withDates = parsed.map(entry => ({
+                        ...entry,
+                        timestamp: new Date(entry.timestamp)
+                    }));
+                    setEmotionEntries(withDates);
+                }
+
+                if (savedUserName) {
+                    setUserName(savedUserName);
+                    setCurrentView('home');
+                }
+
+                if (savedConsent) {
+                    setConsentAccepted(true);
+                }
+            }, []);
+
+            // Save data to localStorage whenever it changes
+            useEffect(() => {
+                if (emotionEntries.length > 0) {
+                    localStorage.setItem('sentiramaEntries', JSON.stringify(emotionEntries));
+                }
+            }, [emotionEntries]);
+
+            useEffect(() => {
+                if (userName) {
+                    localStorage.setItem('sentiramaUserName', userName);
+                }
+            }, [userName]);
+
+            useEffect(() => {
+                if (consentAccepted) {
+                    localStorage.setItem('sentiramaConsent', 'true');
+                }
+            }, [consentAccepted]);
 
             const saveUserName = () => {
                 if (userName.trim() && consentAccepted) {
@@ -106,12 +300,12 @@
 
             const saveEmotionEntry = () => {
                 if (!selectedEmotion) return;
-                
+
                 const now = new Date();
                 const entry = {
                     id: Date.now(),
                     emotion: selectedEmotion,
-                    category: Object.keys(emotionCategories).find(cat => 
+                    category: Object.keys(emotionCategories).find(cat =>
                         emotionCategories[cat].emotions.some(e => e.name === selectedEmotion)
                     ),
                     context: { ...formData },
@@ -119,7 +313,7 @@
                     hour: now.getHours(),
                     dayOfWeek: now.getDay()
                 };
-                
+
                 setEmotionEntries(prev => [entry, ...prev]);
                 setSelectedEmotion(null);
                 setFormData({ activity: '', location: '', people: '', notes: '' });
@@ -130,62 +324,240 @@
                 setFormData(prev => ({ ...prev, [field]: value }));
             };
 
+            const viewEmotionDetails = (emotionName) => {
+                setSelectedEmotionForDict(emotionName);
+                setCurrentView('emotionDetail');
+            };
+
+            // Cleanup charts when component unmounts or view changes
+            useEffect(() => {
+                return () => {
+                    Object.values(chartInstances.current).forEach(chart => {
+                        if (chart) chart.destroy();
+                    });
+                };
+            }, [currentView]);
+
+            // Create visualization charts
+            const createCharts = () => {
+                // Cleanup existing charts
+                Object.values(chartInstances.current).forEach(chart => {
+                    if (chart) chart.destroy();
+                });
+                chartInstances.current = {};
+
+                if (emotionEntries.length === 0) return;
+
+                // Timeline Chart (Last 30 days)
+                const timelineCanvas = chartRefs.timeline.current;
+                if (timelineCanvas) {
+                    const ctx = timelineCanvas.getContext('2d');
+
+                    // Get last 30 days of data
+                    const last30Days = [...Array(30)].map((_, i) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() - (29 - i));
+                        return date.toISOString().split('T')[0];
+                    });
+
+                    const emotionsByDay = last30Days.map(date => {
+                        const dayEntries = emotionEntries.filter(entry =>
+                            entry.timestamp.toISOString().split('T')[0] === date
+                        );
+                        return {
+                            date,
+                            positive: dayEntries.filter(e => e.category === 'positive').length,
+                            neutral: dayEntries.filter(e => e.category === 'neutral').length,
+                            challenging: dayEntries.filter(e => e.category === 'challenging').length
+                        };
+                    });
+
+                    chartInstances.current.timeline = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: last30Days.map(d => new Date(d).toLocaleDateString('en', { month: 'short', day: 'numeric' })),
+                            datasets: [
+                                {
+                                    label: 'Positive',
+                                    data: emotionsByDay.map(d => d.positive),
+                                    borderColor: '#94a3b8',
+                                    backgroundColor: 'rgba(148, 163, 184, 0.1)',
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Neutral',
+                                    data: emotionsByDay.map(d => d.neutral),
+                                    borderColor: '#93c5fd',
+                                    backgroundColor: 'rgba(147, 197, 253, 0.1)',
+                                    tension: 0.4
+                                },
+                                {
+                                    label: 'Challenging',
+                                    data: emotionsByDay.map(d => d.challenging),
+                                    borderColor: '#fbbf24',
+                                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                                    tension: 0.4
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Distribution Chart
+                const distributionCanvas = chartRefs.distribution.current;
+                if (distributionCanvas) {
+                    const ctx = distributionCanvas.getContext('2d');
+
+                    const categoryCounts = {
+                        positive: emotionEntries.filter(e => e.category === 'positive').length,
+                        neutral: emotionEntries.filter(e => e.category === 'neutral').length,
+                        challenging: emotionEntries.filter(e => e.category === 'challenging').length
+                    };
+
+                    chartInstances.current.distribution = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Positive', 'Neutral', 'Challenging'],
+                            datasets: [{
+                                data: [categoryCounts.positive, categoryCounts.neutral, categoryCounts.challenging],
+                                backgroundColor: ['#94a3b8', '#93c5fd', '#fbbf24'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Time of Day Chart
+                const timeOfDayCanvas = chartRefs.timeOfDay.current;
+                if (timeOfDayCanvas) {
+                    const ctx = timeOfDayCanvas.getContext('2d');
+
+                    const hourCounts = Array(24).fill(0);
+                    emotionEntries.forEach(entry => {
+                        hourCounts[entry.hour]++;
+                    });
+
+                    chartInstances.current.timeOfDay = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Array(24).fill(0).map((_, i) => `${i}:00`),
+                            datasets: [{
+                                label: 'Check-ins by Hour',
+                                data: hourCounts,
+                                backgroundColor: '#a5b4fc',
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            };
+
+            // Trigger chart creation when entering insights view
+            useEffect(() => {
+                if (currentView === 'insights' && emotionEntries.length > 0) {
+                    setTimeout(createCharts, 100);
+                }
+            }, [currentView, emotionEntries]);
+
             // Onboarding View
             if (currentView === 'onboarding') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
-                                <div className="text-center space-y-8">
-                                    <div className="text-8xl mb-6">🌱</div>
-                                    <h1 className="text-4xl font-light text-gray-700 mb-4">Welcome to Sentirama</h1>
-                                    <p className="text-gray-600 text-lg leading-relaxed mb-8">
-                                        A gentle space to express and understand your emotions, 
-                                        helping you build better relationships with yourself and others.
+                                <div className="text-center space-y-8 pt-12">
+                                    <h1 className="text-4xl font-light text-slate-700 mb-4">Welcome to Sentirama</h1>
+                                    <p className="text-slate-600 text-lg leading-relaxed mb-8">
+                                        A thoughtful space to track, understand, and learn from your emotions over time.
                                     </p>
-                                    
-                                    <div className="bg-white/30 backdrop-blur-sm p-8 rounded-3xl space-y-6">
-                                        <h2 className="text-2xl font-light text-gray-700">We'd love to personalize your experience</h2>
+
+                                    <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-sm space-y-6">
+                                        <h2 className="text-2xl font-light text-slate-700">Let's personalize your experience</h2>
                                         <div>
-                                            <label className="block text-gray-700 mb-3 text-lg font-light">What should we call you?</label>
+                                            <label className="block text-slate-700 mb-3 text-lg font-light">What should we call you?</label>
                                             <input
                                                 type="text"
                                                 placeholder="Your first name"
                                                 value={userName}
                                                 onChange={(e) => setUserName(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && saveUserName()}
-                                                className="w-full p-4 rounded-2xl border-2 border-gray-200 focus:ring-2 focus:ring-rose-400 focus:border-transparent text-lg text-center"
+                                                className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent text-lg text-center bg-white"
                                                 maxLength="30"
                                             />
                                         </div>
-                                        
+
                                         <div className="space-y-4">
                                             <label className="flex items-start space-x-3 text-left">
                                                 <input
                                                     type="checkbox"
                                                     checked={consentAccepted}
                                                     onChange={(e) => setConsentAccepted(e.target.checked)}
-                                                    className="mt-1 w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
+                                                    className="mt-1 w-4 h-4 text-indigo-500 border-slate-300 rounded focus:ring-indigo-400"
                                                 />
-                                                <span className="text-sm text-gray-600">
+                                                <span className="text-sm text-slate-600">
                                                     I agree to the{' '}
-                                                    <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="text-rose-600 underline hover:text-rose-700">
+                                                    <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline hover:text-indigo-700">
                                                         Terms of Service
                                                     </a>{' '}
                                                     and{' '}
-                                                    <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="text-rose-600 underline hover:text-rose-700">
+                                                    <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-600 underline hover:text-indigo-700">
                                                         Privacy Policy
                                                     </a>
                                                 </span>
                                             </label>
                                         </div>
-                                        
+
                                         {userName.trim() && consentAccepted && (
-                                            <button 
+                                            <button
                                                 onClick={saveUserName}
-                                                className="bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-4 px-8 rounded-2xl font-light text-lg transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
+                                                className="bg-indigo-400 hover:bg-indigo-500 text-white py-4 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md"
                                             >
-                                                Let's begin, {userName}! ✨
+                                                Begin
                                             </button>
                                         )}
                                     </div>
@@ -198,51 +570,70 @@
 
             // Home View
             if (currentView === 'home') {
+                const getGreeting = () => {
+                    const hour = new Date().getHours();
+                    if (hour >= 5 && hour < 12) return 'Good morning';
+                    else if (hour >= 12 && hour < 18) return 'Good afternoon';
+                    else if (hour >= 18 && hour < 22) return 'Good evening';
+                    else return 'Good night';
+                };
+
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
-                                <div className="text-center space-y-8">
-                                    <div className="text-7xl mb-6">🌸</div>
-                                    <h1 className="text-3xl font-light text-gray-700 mb-3">
-                                        {userName ? getTimeBasedGreeting(userName) : 'Welcome to Sentirama'}
+                                <div className="text-center space-y-8 pt-8">
+                                    <h1 className="text-3xl font-light text-slate-700 mb-3">
+                                        {getGreeting()}{userName ? `, ${userName}` : ''}
                                     </h1>
-                                    <p className="text-gray-500 text-lg">
-                                        {userName ? getPersonalizedMessage(userName) : 'A gentle space for emotional awareness'}
+                                    <p className="text-slate-500 text-lg">
+                                        How are you feeling today?
                                     </p>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         <button
                                             onClick={() => setCurrentView('emotion')}
-                                            className="w-full bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-6 px-8 rounded-2xl font-light text-xl flex items-center justify-center space-x-3 transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
+                                            className="w-full bg-indigo-400 hover:bg-indigo-500 text-white py-5 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
-                                            <span>❤️</span>
-                                            <span>Check in with your emotions</span>
+                                            Record emotion check-in
                                         </button>
 
                                         <button
                                             onClick={() => setCurrentView('insights')}
-                                            className="w-full bg-gradient-to-br from-purple-400 to-indigo-400 hover:from-purple-500 hover:to-indigo-500 text-white py-6 px-8 rounded-2xl font-light text-xl flex items-center justify-center space-x-3 transition-all duration-300 transform hover:scale-105 hover:rotate-1 shadow-lg hover:shadow-xl"
+                                            className="w-full bg-slate-300 hover:bg-slate-400 text-slate-700 py-5 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
-                                            <span>📊</span>
-                                            <span>View your emotional journey</span>
+                                            View insights & patterns
+                                        </button>
+
+                                        <button
+                                            onClick={() => setCurrentView('dictionary')}
+                                            className="w-full bg-blue-200 hover:bg-blue-300 text-slate-700 py-5 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                        >
+                                            Explore emotion meanings
+                                        </button>
+
+                                        <button
+                                            onClick={() => setCurrentView('patterns')}
+                                            className="w-full bg-amber-200 hover:bg-amber-300 text-slate-700 py-5 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                        >
+                                            Analyze patterns by situation
                                         </button>
                                     </div>
 
                                     {emotionEntries.length > 0 && (
-                                        <div className="bg-white/30 backdrop-blur-sm p-6 rounded-3xl">
-                                            <h3 className="text-lg font-light text-gray-700 mb-4">Recent check-ins</h3>
+                                        <div className="bg-white/60 backdrop-blur-sm p-6 rounded-2xl shadow-sm">
+                                            <h3 className="text-lg font-light text-slate-700 mb-4">Recent check-ins</h3>
                                             <div className="space-y-3">
                                                 {emotionEntries.slice(0, 3).map(entry => (
-                                                    <div key={entry.id} className="flex items-center justify-between bg-white/50 p-3 rounded-xl">
+                                                    <div key={entry.id} className="flex items-center justify-between bg-white/70 p-3 rounded-xl">
                                                         <div className="text-left">
-                                                            <p className="font-medium text-gray-800">{entry.emotion}</p>
-                                                            <p className="text-sm text-gray-600">{entry.timestamp.toLocaleDateString()}</p>
+                                                            <p className="font-medium text-slate-800">{entry.emotion}</p>
+                                                            <p className="text-sm text-slate-600">{entry.timestamp.toLocaleDateString()}</p>
                                                         </div>
                                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                            entry.category === 'positive' ? 'bg-green-100 text-green-800' :
-                                                            entry.category === 'neutral' ? 'bg-blue-100 text-blue-800' :
-                                                            'bg-orange-100 text-orange-800'
+                                                            entry.category === 'positive' ? 'bg-slate-200 text-slate-700' :
+                                                            entry.category === 'neutral' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-amber-100 text-amber-700'
                                                         }`}>
                                                             {entry.category}
                                                         </span>
@@ -253,12 +644,12 @@
                                     )}
 
                                     <div className="text-center pt-6 space-y-2">
-                                        <p className="text-sm text-gray-600 font-light">
-                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-gray-700 hover:text-gray-800 underline">fundament</a> • Designing better coexistence
+                                        <p className="text-sm text-slate-600 font-light">
+                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-slate-700 hover:text-slate-800 underline">fundament</a>
                                         </p>
-                                        <p className="text-xs text-gray-500">
-                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline">Privacy Policy</a> • 
-                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline ml-1">Terms of Service</a>
+                                        <p className="text-xs text-slate-500">
+                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-slate-700 underline">Privacy Policy</a> •
+                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-700 underline ml-1">Terms of Service</a>
                                         </p>
                                     </div>
                                 </div>
@@ -271,32 +662,31 @@
             // Emotion Selection View
             if (currentView === 'emotion') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
                                 <div className="space-y-8">
-                                    <div className="text-center mb-12">
-                                        <div className="text-7xl mb-6">🌸</div>
-                                        <h2 className="text-3xl font-light text-gray-700 mb-3">
+                                    <div className="text-center mb-8">
+                                        <h2 className="text-3xl font-light text-slate-700 mb-3">
                                             {userName ? `${userName}, how are you feeling?` : 'How are you feeling?'}
                                         </h2>
-                                        <p className="text-gray-500 text-lg">
-                                            Take a gentle moment to check in with yourself
+                                        <p className="text-slate-500 text-lg">
+                                            Select the emotion that best describes your current state
                                         </p>
                                     </div>
 
                                     {Object.entries(emotionCategories).map(([category, { color, emotions }]) => (
                                         <div key={category} className="space-y-4">
-                                            <h3 className="text-xl font-light text-gray-600 capitalize mb-6">{category}</h3>
-                                            <div className="grid grid-cols-2 gap-4">
+                                            <h3 className="text-xl font-light text-slate-600 capitalize mb-4">{category}</h3>
+                                            <div className="grid grid-cols-2 gap-3">
                                                 {emotions.map(emotion => (
                                                     <button
                                                         key={emotion.name}
                                                         onClick={() => setSelectedEmotion(emotion.name)}
-                                                        className={`p-6 rounded-2xl text-white font-light text-lg transition-all duration-300 transform hover:scale-110 hover:rotate-1 active:scale-95 shadow-lg hover:shadow-2xl ${
-                                                            selectedEmotion === emotion.name 
-                                                                ? `bg-gradient-to-br ${color} ring-4 ring-white/50 scale-105 shadow-xl rotate-1` 
-                                                                : `bg-gradient-to-br ${color}`
+                                                        className={`p-5 rounded-xl text-slate-700 font-light text-base transition-all duration-200 shadow-sm hover:shadow-md ${
+                                                            selectedEmotion === emotion.name
+                                                                ? `bg-gradient-to-br ${color} ring-2 ring-indigo-300 shadow-md`
+                                                                : `bg-gradient-to-br ${color} hover:ring-2 hover:ring-slate-300`
                                                         }`}
                                                     >
                                                         {emotion.name}
@@ -306,34 +696,22 @@
                                         </div>
                                     ))}
 
-                                    <div className="flex space-x-4 pt-8">
+                                    <div className="flex space-x-3 pt-6">
                                         <button
                                             onClick={() => setCurrentView('home')}
-                                            className="flex-1 bg-gradient-to-br from-rose-100 to-orange-100 hover:from-rose-200 hover:to-orange-200 text-gray-600 py-4 rounded-2xl font-light text-lg flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:rotate-1"
+                                            className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-4 rounded-xl font-light text-base transition-all duration-200"
                                         >
-                                            <span>←</span>
-                                            <span>Back</span>
+                                            Back
                                         </button>
-                                        
+
                                         {selectedEmotion && (
                                             <button
                                                 onClick={() => setCurrentView('context')}
-                                                className="flex-2 bg-gradient-to-br from-rose-400 to-pink-400 hover:from-rose-500 hover:to-pink-500 text-white py-4 px-8 rounded-2xl font-light text-lg flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:rotate-1"
+                                                className="flex-2 bg-indigo-400 hover:bg-indigo-500 text-white py-4 px-8 rounded-xl font-light text-base transition-all duration-200 shadow-sm hover:shadow-md"
                                             >
-                                                <span>Continue with {selectedEmotion}</span>
-                                                <span>→</span>
+                                                Continue
                                             </button>
                                         )}
-                                    </div>
-
-                                    <div className="text-center pt-6 space-y-2">
-                                        <p className="text-sm text-gray-600 font-light">
-                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-gray-700 hover:text-gray-800 underline">fundament</a> • Designing better coexistence
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline">Privacy Policy</a> • 
-                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline ml-1">Terms of Service</a>
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -345,69 +723,64 @@
             // Context View
             if (currentView === 'context') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
                                 <div className="space-y-6">
                                     <div className="text-center mb-6">
-                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">Add context</h2>
-                                        <p className="text-gray-600">Help us understand patterns in your emotions</p>
+                                        <h2 className="text-2xl font-light text-slate-800 mb-2">Add context</h2>
+                                        <p className="text-slate-600">Understanding patterns helps you learn from your emotions</p>
                                     </div>
 
-                                    <div className="bg-gradient-to-r from-purple-100 to-pink-100 p-4 rounded-xl">
-                                        <div className="flex items-center space-x-3">
-                                            <span className="text-purple-600 text-2xl">❤️</span>
-                                            <div>
-                                                <p className="font-semibold text-purple-800">Feeling: {selectedEmotion}</p>
-                                            </div>
-                                        </div>
+                                    <div className="bg-indigo-100/70 p-4 rounded-xl">
+                                        <p className="font-medium text-indigo-900">Selected: {selectedEmotion}</p>
                                     </div>
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">What were you doing?</label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">What were you doing?</label>
                                             <input
                                                 type="text"
-                                                placeholder="Working, socializing, exercise..."
+                                                placeholder="Working, exercising, socializing..."
                                                 value={formData.activity}
                                                 onChange={(e) => handleInputChange('activity', e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                📍 Where are you?
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                Where were you?
                                             </label>
                                             <input
                                                 type="text"
-                                                placeholder="Home, work, cafe, park..."
+                                                placeholder="Home, office, outdoors..."
                                                 value={formData.location}
                                                 onChange={(e) => handleInputChange('location', e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                👥 Who are you with?
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                                                Who were you with?
                                             </label>
                                             <input
                                                 type="text"
-                                                placeholder="Alone, family, colleagues, friends..."
+                                                placeholder="Alone, with family, colleagues..."
                                                 value={formData.people}
                                                 onChange={(e) => handleInputChange('people', e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">Any notes? (optional)</label>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Additional notes (optional)</label>
                                             <textarea
-                                                placeholder="What might have influenced this feeling?"
+                                                placeholder="Any other details that might be relevant..."
                                                 value={formData.notes}
                                                 onChange={(e) => handleInputChange('notes', e.target.value)}
-                                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                className="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
                                                 rows="3"
                                             />
                                         </div>
@@ -416,28 +789,16 @@
                                     <div className="flex space-x-3">
                                         <button
                                             onClick={() => setCurrentView('emotion')}
-                                            className="flex-1 bg-gradient-to-br from-rose-100 to-orange-100 hover:from-rose-200 hover:to-orange-200 text-gray-600 py-3 rounded-2xl font-light flex items-center justify-center space-x-2 transition-all duration-300 transform hover:scale-105 hover:rotate-1"
+                                            className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-light transition-all duration-200"
                                         >
-                                            <span>←</span>
-                                            <span>Back</span>
+                                            Back
                                         </button>
                                         <button
                                             onClick={saveEmotionEntry}
-                                            className="flex-2 bg-gradient-to-br from-green-400 to-emerald-500 hover:from-green-500 hover:to-emerald-600 text-white py-3 px-6 rounded-2xl font-light flex items-center justify-center space-x-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 hover:rotate-1"
+                                            className="flex-2 bg-indigo-400 hover:bg-indigo-500 text-white py-3 px-6 rounded-xl font-light transition-all duration-200 shadow-sm hover:shadow-md"
                                         >
-                                            <span>➕</span>
-                                            <span>Save Entry</span>
+                                            Save Entry
                                         </button>
-                                    </div>
-
-                                    <div className="text-center pt-6 space-y-2">
-                                        <p className="text-sm text-gray-600 font-light">
-                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-gray-700 hover:text-gray-800 underline">fundament</a> • Designing better coexistence
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline">Privacy Policy</a> • 
-                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline ml-1">Terms of Service</a>
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -449,45 +810,34 @@
             // Success View
             if (currentView === 'success') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
-                                <div className="text-center space-y-6">
-                                    <div className="text-8xl mb-4">✨</div>
-                                    <h2 className="text-2xl font-bold text-gray-800">
-                                        {userName ? `Thank you, ${userName}!` : 'Thank you!'}
+                                <div className="text-center space-y-6 pt-12">
+                                    <h2 className="text-2xl font-light text-slate-800">
+                                        {userName ? `Thank you, ${userName}` : 'Thank you'}
                                     </h2>
-                                    <p className="text-gray-600">
-                                        Your emotional check-in has been saved. Your awareness matters.
+                                    <p className="text-slate-600">
+                                        Your emotional check-in has been saved
                                     </p>
-                                    
-                                    <div className="bg-gradient-to-r from-green-100 to-emerald-100 p-4 rounded-xl">
-                                        <p className="text-green-800 font-medium">Building emotional awareness, one check-in at a time</p>
+
+                                    <div className="bg-indigo-100/70 p-4 rounded-xl">
+                                        <p className="text-indigo-900 font-light">Building awareness, one check-in at a time</p>
                                     </div>
 
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 pt-4">
                                         <button
                                             onClick={() => setCurrentView('emotion')}
-                                            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-semibold"
+                                            className="w-full bg-indigo-400 hover:bg-indigo-500 text-white py-3 rounded-xl font-light transition-all duration-200"
                                         >
                                             Add another entry
                                         </button>
                                         <button
                                             onClick={() => setCurrentView('home')}
-                                            className="w-full bg-gray-200 text-gray-800 py-3 rounded-xl font-semibold"
+                                            className="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-light transition-all duration-200"
                                         >
                                             Back to home
                                         </button>
-                                    </div>
-
-                                    <div className="text-center pt-6 space-y-2">
-                                        <p className="text-sm text-gray-600 font-light">
-                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-gray-700 hover:text-gray-800 underline">fundament</a> • Designing better coexistence
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline">Privacy Policy</a> • 
-                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline ml-1">Terms of Service</a>
-                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -496,88 +846,210 @@
                 );
             }
 
-            // Insights View
-            if (currentView === 'insights') {
+            // Emotion Dictionary View
+            if (currentView === 'dictionary') {
                 return (
-                    <div className="min-h-screen bg-gradient-to-br from-rose-200 via-orange-200 to-amber-200">
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
                                 <div className="space-y-6">
                                     <div className="text-center">
                                         <button
                                             onClick={() => setCurrentView('home')}
-                                            className="mb-4 text-gray-600 hover:text-gray-800"
+                                            className="mb-4 text-slate-600 hover:text-slate-800"
                                         >
-                                            ← Back to home
+                                            Back to home
                                         </button>
-                                        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                                            {userName ? `Your emotional journey, ${userName}` : 'Your emotional insights'}
+                                        <h2 className="text-2xl font-light text-slate-800 mb-2">
+                                            Emotion Dictionary
                                         </h2>
-                                        <p className="text-gray-600">
-                                            Discover patterns in your {emotionEntries.length} check-ins
+                                        <p className="text-slate-600">
+                                            Explore the meanings and effects of each emotion
+                                        </p>
+                                    </div>
+
+                                    {Object.entries(emotionCategories).map(([category, { emotions, color }]) => (
+                                        <div key={category} className="space-y-3">
+                                            <h3 className="text-lg font-medium text-slate-700 capitalize">{category} Emotions</h3>
+                                            <div className="space-y-2">
+                                                {emotions.map(emotion => (
+                                                    <button
+                                                        key={emotion.name}
+                                                        onClick={() => viewEmotionDetails(emotion.name)}
+                                                        className={`w-full text-left p-4 rounded-xl bg-gradient-to-r ${color} hover:shadow-md transition-all duration-200`}
+                                                    >
+                                                        <p className="font-medium text-slate-800">{emotion.name}</p>
+                                                        <p className="text-sm text-slate-600 mt-1">Tap to learn more</p>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Emotion Detail View
+            if (currentView === 'emotionDetail' && selectedEmotionForDict) {
+                const emotionInfo = emotionDictionary[selectedEmotionForDict];
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                        <div className="max-w-md mx-auto min-h-screen">
+                            <div className="p-8">
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <button
+                                            onClick={() => setCurrentView('dictionary')}
+                                            className="mb-4 text-slate-600 hover:text-slate-800"
+                                        >
+                                            Back to dictionary
+                                        </button>
+                                        <h2 className="text-3xl font-light text-slate-800 mb-2">
+                                            {selectedEmotionForDict}
+                                        </h2>
+                                    </div>
+
+                                    <div className="bg-white/70 p-6 rounded-xl shadow-sm space-y-4">
+                                        <div>
+                                            <h3 className="font-medium text-slate-800 mb-2">Meaning</h3>
+                                            <p className="text-slate-600 leading-relaxed">{emotionInfo.meaning}</p>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-medium text-slate-800 mb-2">Effects</h3>
+                                            <p className="text-slate-600 leading-relaxed">{emotionInfo.effects}</p>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-medium text-slate-800 mb-2">Physical Signs</h3>
+                                            <p className="text-slate-600 leading-relaxed">{emotionInfo.physicalSigns}</p>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="font-medium text-slate-800 mb-2">Coping Strategies</h3>
+                                            <p className="text-slate-600 leading-relaxed">{emotionInfo.copingStrategies}</p>
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setCurrentView('dictionary')}
+                                        className="w-full bg-indigo-400 hover:bg-indigo-500 text-white py-3 rounded-xl font-light transition-all duration-200"
+                                    >
+                                        Back to dictionary
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Insights View with Data Visualization
+            if (currentView === 'insights') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                        <div className="max-w-md mx-auto min-h-screen">
+                            <div className="p-8">
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <button
+                                            onClick={() => setCurrentView('home')}
+                                            className="mb-4 text-slate-600 hover:text-slate-800"
+                                        >
+                                            Back to home
+                                        </button>
+                                        <h2 className="text-2xl font-light text-slate-800 mb-2">
+                                            Your Emotional Insights
+                                        </h2>
+                                        <p className="text-slate-600">
+                                            {emotionEntries.length} check-ins recorded
                                         </p>
                                     </div>
 
                                     {emotionEntries.length === 0 ? (
                                         <div className="text-center py-8">
-                                            <div className="text-6xl mb-4">📊</div>
-                                            <p className="text-gray-500">No entries yet. Start tracking your emotions to see insights!</p>
+                                            <p className="text-slate-500 mb-4">No entries yet. Start tracking your emotions to see insights.</p>
                                             <button
                                                 onClick={() => setCurrentView('emotion')}
-                                                className="mt-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-6 rounded-lg font-semibold"
+                                                className="bg-indigo-400 hover:bg-indigo-500 text-white py-2 px-6 rounded-xl font-light"
                                             >
                                                 Add your first entry
                                             </button>
                                         </div>
                                     ) : (
                                         <div className="space-y-6">
+                                            {/* Statistics Cards */}
                                             <div className="grid grid-cols-3 gap-3">
-                                                <div className="bg-white p-4 rounded-xl text-center border border-gray-200">
-                                                    <p className="text-2xl font-bold text-gray-800">{emotionEntries.length}</p>
-                                                    <p className="text-sm text-gray-600">Total entries</p>
+                                                <div className="bg-white/70 p-4 rounded-xl text-center shadow-sm">
+                                                    <p className="text-2xl font-light text-slate-800">{emotionEntries.length}</p>
+                                                    <p className="text-sm text-slate-600">Total</p>
                                                 </div>
-                                                <div className="bg-white p-4 rounded-xl text-center border border-gray-200">
-                                                    <p className="text-2xl font-bold text-green-600">
+                                                <div className="bg-white/70 p-4 rounded-xl text-center shadow-sm">
+                                                    <p className="text-2xl font-light text-slate-600">
                                                         {emotionEntries.filter(e => e.category === 'positive').length}
                                                     </p>
-                                                    <p className="text-sm text-gray-600">Positive</p>
+                                                    <p className="text-sm text-slate-600">Positive</p>
                                                 </div>
-                                                <div className="bg-white p-4 rounded-xl text-center border border-gray-200">
-                                                    <p className="text-2xl font-bold text-orange-600">
+                                                <div className="bg-white/70 p-4 rounded-xl text-center shadow-sm">
+                                                    <p className="text-2xl font-light text-amber-600">
                                                         {emotionEntries.filter(e => e.category === 'challenging').length}
                                                     </p>
-                                                    <p className="text-sm text-gray-600">Challenging</p>
+                                                    <p className="text-sm text-slate-600">Challenge</p>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-white p-4 rounded-xl border border-gray-200">
-                                                <h3 className="font-semibold text-gray-800 mb-3 flex items-center">
-                                                    <span className="mr-2">🕐</span>
-                                                    Recent entries
-                                                </h3>
-                                                
+                                            {/* Timeline Chart */}
+                                            <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                                                <h3 className="font-medium text-slate-800 mb-3">Emotion Timeline (Last 30 Days)</h3>
+                                                <div className="chart-container">
+                                                    <canvas ref={chartRefs.timeline}></canvas>
+                                                </div>
+                                            </div>
+
+                                            {/* Distribution Chart */}
+                                            <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                                                <h3 className="font-medium text-slate-800 mb-3">Emotion Distribution</h3>
+                                                <div className="chart-container">
+                                                    <canvas ref={chartRefs.distribution}></canvas>
+                                                </div>
+                                            </div>
+
+                                            {/* Time of Day Chart */}
+                                            <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                                                <h3 className="font-medium text-slate-800 mb-3">Check-ins by Time of Day</h3>
+                                                <div className="chart-container">
+                                                    <canvas ref={chartRefs.timeOfDay}></canvas>
+                                                </div>
+                                            </div>
+
+                                            {/* Recent Entries */}
+                                            <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                                                <h3 className="font-medium text-slate-800 mb-3">Recent Entries</h3>
                                                 <div className="space-y-3">
-                                                    {emotionEntries.slice(0, 10).map(entry => (
-                                                        <div 
-                                                            key={entry.id} 
-                                                            className="border-l-4 border-blue-400 pl-3 py-3 hover:bg-gray-50 rounded-r-lg transition-colors"
-                                                        >
+                                                    {emotionEntries.slice(0, 5).map(entry => (
+                                                        <div key={entry.id} className="border-l-4 border-indigo-300 pl-3 py-2 bg-white/50 rounded-r-lg">
                                                             <div className="flex justify-between items-start">
                                                                 <div className="flex-1">
                                                                     <div className="flex items-center space-x-2 mb-1">
-                                                                        <p className="font-medium text-gray-800">{entry.emotion}</p>
+                                                                        <p className="font-medium text-slate-800">{entry.emotion}</p>
                                                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                                                            entry.category === 'positive' ? 'bg-green-100 text-green-800' :
-                                                                            entry.category === 'neutral' ? 'bg-blue-100 text-blue-800' :
-                                                                            'bg-orange-100 text-orange-800'
+                                                                            entry.category === 'positive' ? 'bg-slate-200 text-slate-700' :
+                                                                            entry.category === 'neutral' ? 'bg-blue-100 text-blue-700' :
+                                                                            'bg-amber-100 text-amber-700'
                                                                         }`}>
                                                                             {entry.category}
                                                                         </span>
                                                                     </div>
-                                                                    <div className="text-sm text-gray-600 space-y-1">
+                                                                    <div className="text-sm text-slate-600 space-y-1">
                                                                         <p>{entry.timestamp.toLocaleDateString()} at {entry.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                                                         {entry.context.activity && (
                                                                             <p><span className="font-medium">Activity:</span> {entry.context.activity}</p>
+                                                                        )}
+                                                                        {entry.context.location && (
+                                                                            <p><span className="font-medium">Location:</span> {entry.context.location}</p>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -588,16 +1060,132 @@
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
 
-                                    <div className="text-center pt-6 space-y-2">
-                                        <p className="text-sm text-gray-600 font-light">
-                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-gray-700 hover:text-gray-800 underline">fundament</a> • Designing better coexistence
-                                        </p>
-                                        <p className="text-xs text-gray-500">
-                                            <a href="https://www.fundament.es/sentirama-privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline">Privacy Policy</a> • 
-                                            <a href="https://www.fundament.es/sentirama-conditions" target="_blank" rel="noopener noreferrer" className="hover:text-gray-700 underline ml-1">Terms of Service</a>
+            // Pattern Analysis View
+            if (currentView === 'patterns') {
+                // Analyze patterns by location, activity, and people
+                const locationPatterns = {};
+                const activityPatterns = {};
+                const peoplePatterns = {};
+
+                emotionEntries.forEach(entry => {
+                    const { location, activity, people } = entry.context;
+
+                    if (location) {
+                        if (!locationPatterns[location]) {
+                            locationPatterns[location] = { positive: 0, neutral: 0, challenging: 0, total: 0 };
+                        }
+                        locationPatterns[location][entry.category]++;
+                        locationPatterns[location].total++;
+                    }
+
+                    if (activity) {
+                        if (!activityPatterns[activity]) {
+                            activityPatterns[activity] = { positive: 0, neutral: 0, challenging: 0, total: 0 };
+                        }
+                        activityPatterns[activity][entry.category]++;
+                        activityPatterns[activity].total++;
+                    }
+
+                    if (people) {
+                        if (!peoplePatterns[people]) {
+                            peoplePatterns[people] = { positive: 0, neutral: 0, challenging: 0, total: 0 };
+                        }
+                        peoplePatterns[people][entry.category]++;
+                        peoplePatterns[people].total++;
+                    }
+                });
+
+                const renderPatternSection = (title, patterns) => {
+                    const sortedPatterns = Object.entries(patterns).sort((a, b) => b[1].total - a[1].total);
+
+                    if (sortedPatterns.length === 0) {
+                        return (
+                            <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                                <h3 className="font-medium text-slate-800 mb-2">{title}</h3>
+                                <p className="text-slate-500 text-sm">No data yet. Add context to your entries to see patterns.</p>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div className="bg-white/70 p-4 rounded-xl shadow-sm">
+                            <h3 className="font-medium text-slate-800 mb-3">{title}</h3>
+                            <div className="space-y-3">
+                                {sortedPatterns.slice(0, 5).map(([name, stats]) => (
+                                    <div key={name} className="border-l-4 border-indigo-300 pl-3 py-2 bg-white/50 rounded-r-lg">
+                                        <p className="font-medium text-slate-800 mb-2">{name}</p>
+                                        <div className="flex space-x-2 text-xs">
+                                            <span className="px-2 py-1 bg-slate-200 text-slate-700 rounded">
+                                                Positive: {stats.positive}
+                                            </span>
+                                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                                                Neutral: {stats.neutral}
+                                            </span>
+                                            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded">
+                                                Challenge: {stats.challenging}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-1">Total entries: {stats.total}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                };
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                        <div className="max-w-md mx-auto min-h-screen">
+                            <div className="p-8">
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <button
+                                            onClick={() => setCurrentView('home')}
+                                            className="mb-4 text-slate-600 hover:text-slate-800"
+                                        >
+                                            Back to home
+                                        </button>
+                                        <h2 className="text-2xl font-light text-slate-800 mb-2">
+                                            Pattern Analysis
+                                        </h2>
+                                        <p className="text-slate-600">
+                                            Discover how situations impact your emotions
                                         </p>
                                     </div>
+
+                                    {emotionEntries.length === 0 ? (
+                                        <div className="text-center py-8">
+                                            <p className="text-slate-500 mb-4">No entries yet. Start tracking to see patterns.</p>
+                                            <button
+                                                onClick={() => setCurrentView('emotion')}
+                                                className="bg-indigo-400 hover:bg-indigo-500 text-white py-2 px-6 rounded-xl font-light"
+                                            >
+                                                Add your first entry
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {renderPatternSection('Patterns by Location', locationPatterns)}
+                                            {renderPatternSection('Patterns by Activity', activityPatterns)}
+                                            {renderPatternSection('Patterns by Social Context', peoplePatterns)}
+
+                                            <div className="bg-indigo-100/70 p-4 rounded-xl mt-6">
+                                                <h3 className="font-medium text-indigo-900 mb-2">Learning from Patterns</h3>
+                                                <p className="text-sm text-indigo-800 leading-relaxed">
+                                                    Understanding which situations correlate with different emotions helps you
+                                                    make informed choices about your environment, activities, and social interactions.
+                                                    Use these insights to cultivate conditions that support your well-being.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
