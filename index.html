@@ -608,7 +608,8 @@
             return null;
         };
 
-        ReactDOM.render(<SentiramaApp />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SentiramaApp />);
     </script>
 </body>
 </html>
