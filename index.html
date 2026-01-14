@@ -10,6 +10,12 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -31,6 +37,21 @@
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQ-8VA_EhYdexIo4kckAv_giqfUyTu38o",
+            authDomain: "sentirama-381f7.firebaseapp.com",
+            projectId: "sentirama-381f7",
+            storageBucket: "sentirama-381f7.firebasestorage.app",
+            messagingSenderId: "1021299681168",
+            appId: "1:1021299681168:web:afcbf086eed6a3fc793515",
+            measurementId: "G-5VWQ82HCM8"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
 
         // Comprehensive emotion dictionary with meanings, effects, and insights
         const emotionDictionary = {
@@ -184,7 +205,8 @@
         };
 
         const SentiramaApp = () => {
-            const [currentView, setCurrentView] = useState('onboarding');
+            const [currentView, setCurrentView] = useState('loading');
+            const [user, setUser] = useState(null);
             const [selectedEmotion, setSelectedEmotion] = useState(null);
             const [emotionEntries, setEmotionEntries] = useState([]);
             const [userName, setUserName] = useState('');
@@ -196,6 +218,10 @@
                 notes: ''
             });
             const [selectedEmotionForDict, setSelectedEmotionForDict] = useState(null);
+            const [authError, setAuthError] = useState('');
+            const [authLoading, setAuthLoading] = useState(false);
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
             const chartRefs = {
                 timeline: useRef(null),
                 distribution: useRef(null),
@@ -248,76 +274,152 @@
                 }
             };
 
-            // Load data from localStorage on mount
+            // Listen to authentication state
             useEffect(() => {
-                const savedEntries = localStorage.getItem('sentiramaEntries');
-                const savedUserName = localStorage.getItem('sentiramaUserName');
-                const savedConsent = localStorage.getItem('sentiramaConsent');
+                const unsubscribe = auth.onAuthStateChanged(async (user) => {
+                    setUser(user);
+                    if (user) {
+                        // Load user profile and emotion entries from Firestore
+                        await loadUserData(user.uid);
+                        setCurrentView('home');
+                    } else {
+                        setCurrentView('login');
+                        setEmotionEntries([]);
+                        setUserName('');
+                    }
+                });
 
-                if (savedEntries) {
-                    const parsed = JSON.parse(savedEntries);
-                    const withDates = parsed.map(entry => ({
-                        ...entry,
-                        timestamp: new Date(entry.timestamp)
-                    }));
-                    setEmotionEntries(withDates);
-                }
-
-                if (savedUserName) {
-                    setUserName(savedUserName);
-                    setCurrentView('home');
-                }
-
-                if (savedConsent) {
-                    setConsentAccepted(true);
-                }
+                return () => unsubscribe();
             }, []);
 
-            // Save data to localStorage whenever it changes
-            useEffect(() => {
-                if (emotionEntries.length > 0) {
-                    localStorage.setItem('sentiramaEntries', JSON.stringify(emotionEntries));
-                }
-            }, [emotionEntries]);
+            // Load user data from Firestore
+            const loadUserData = async (userId) => {
+                try {
+                    // Load user profile
+                    const profileDoc = await db.collection('users').doc(userId).get();
+                    if (profileDoc.exists) {
+                        const profileData = profileDoc.data();
+                        setUserName(profileData.name || '');
+                        setConsentAccepted(profileData.consentAccepted || false);
+                    }
 
-            useEffect(() => {
-                if (userName) {
-                    localStorage.setItem('sentiramaUserName', userName);
-                }
-            }, [userName]);
+                    // Load emotion entries
+                    const entriesSnapshot = await db.collection('users').doc(userId).collection('emotions')
+                        .orderBy('timestamp', 'desc')
+                        .get();
 
-            useEffect(() => {
-                if (consentAccepted) {
-                    localStorage.setItem('sentiramaConsent', 'true');
-                }
-            }, [consentAccepted]);
+                    const entries = entriesSnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            ...data,
+                            id: doc.id,
+                            timestamp: data.timestamp.toDate()
+                        };
+                    });
 
-            const saveUserName = () => {
-                if (userName.trim() && consentAccepted) {
+                    setEmotionEntries(entries);
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                }
+            };
+
+            // Save user profile to Firestore
+            const saveUserProfile = async (name, consent) => {
+                if (!user) return;
+
+                try {
+                    await db.collection('users').doc(user.uid).set({
+                        name: name,
+                        consentAccepted: consent,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch (error) {
+                    console.error('Error saving user profile:', error);
+                }
+            };
+
+            // Sign up
+            const handleSignup = async (e) => {
+                e.preventDefault();
+                setAuthError('');
+                setAuthLoading(true);
+
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    // User will be redirected to onboarding by auth state listener
+                    setCurrentView('onboarding');
+                } catch (error) {
+                    setAuthError(error.message);
+                } finally {
+                    setAuthLoading(false);
+                }
+            };
+
+            // Log in
+            const handleLogin = async (e) => {
+                e.preventDefault();
+                setAuthError('');
+                setAuthLoading(true);
+
+                try {
+                    await auth.signInWithEmailAndPassword(email, password);
+                    // User will be redirected to home by auth state listener
+                } catch (error) {
+                    setAuthError(error.message);
+                } finally {
+                    setAuthLoading(false);
+                }
+            };
+
+            // Sign out
+            const handleSignOut = async () => {
+                try {
+                    await auth.signOut();
+                    setCurrentView('login');
+                } catch (error) {
+                    console.error('Error signing out:', error);
+                }
+            };
+
+            const saveUserName = async () => {
+                if (userName.trim() && consentAccepted && user) {
+                    await saveUserProfile(userName, consentAccepted);
                     setCurrentView('home');
                 }
             };
 
-            const saveEmotionEntry = () => {
-                if (!selectedEmotion) return;
+            const saveEmotionEntry = async () => {
+                if (!selectedEmotion || !user) return;
 
                 const now = new Date();
                 const entry = {
-                    id: Date.now(),
                     emotion: selectedEmotion,
                     category: Object.keys(emotionCategories).find(cat =>
                         emotionCategories[cat].emotions.some(e => e.name === selectedEmotion)
                     ),
                     context: { ...formData },
-                    timestamp: now,
+                    timestamp: firebase.firestore.Timestamp.fromDate(now),
                     hour: now.getHours(),
                     dayOfWeek: now.getDay()
                 };
 
-                setEmotionEntries(prev => [entry, ...prev]);
-                setSelectedEmotion(null);
-                setFormData({ activity: '', location: '', people: '', notes: '' });
-                setCurrentView('success');
+                try {
+                    const docRef = await db.collection('users').doc(user.uid).collection('emotions').add(entry);
+
+                    // Add to local state
+                    setEmotionEntries(prev => [{
+                        ...entry,
+                        id: docRef.id,
+                        timestamp: now
+                    }, ...prev]);
+
+                    setSelectedEmotion(null);
+                    setFormData({ activity: '', location: '', people: '', notes: '' });
+                    setCurrentView('success');
+                } catch (error) {
+                    console.error('Error saving emotion entry:', error);
+                    alert('Error saving entry. Please try again.');
+                }
             };
 
             const handleInputChange = (field, value) => {
@@ -353,7 +455,6 @@
                 if (timelineCanvas) {
                     const ctx = timelineCanvas.getContext('2d');
 
-                    // Get last 30 days of data
                     const last30Days = [...Array(30)].map((_, i) => {
                         const date = new Date();
                         date.setDate(date.getDate() - (29 - i));
@@ -504,6 +605,189 @@
                 }
             }, [currentView, emotionEntries]);
 
+            // Loading View
+            if (currentView === 'loading') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+                        <div className="text-center">
+                            <div className="text-slate-600 text-xl font-light">Loading...</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Login View
+            if (currentView === 'login') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                        <div className="max-w-md mx-auto min-h-screen">
+                            <div className="p-8">
+                                <div className="text-center space-y-8 pt-12">
+                                    <h1 className="text-4xl font-light text-slate-700 mb-4">Welcome to Sentirama</h1>
+                                    <p className="text-slate-600 text-lg leading-relaxed mb-8">
+                                        Sign in to continue your emotional journey
+                                    </p>
+
+                                    <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-sm space-y-6">
+                                        <h2 className="text-2xl font-light text-slate-700">Sign In</h2>
+
+                                        {authError && (
+                                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+                                                {authError}
+                                            </div>
+                                        )}
+
+                                        <form onSubmit={handleLogin} className="space-y-4">
+                                            <div>
+                                                <label className="block text-slate-700 mb-2 text-sm font-medium">Email</label>
+                                                <input
+                                                    type="email"
+                                                    placeholder="your@email.com"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-slate-700 mb-2 text-sm font-medium">Password</label>
+                                                <input
+                                                    type="password"
+                                                    placeholder="••••••••"
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={authLoading}
+                                                className="w-full bg-indigo-400 hover:bg-indigo-500 text-white py-4 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                                            >
+                                                {authLoading ? 'Signing in...' : 'Sign In'}
+                                            </button>
+                                        </form>
+
+                                        <div className="text-center pt-4">
+                                            <p className="text-slate-600">
+                                                Don't have an account?{' '}
+                                                <button
+                                                    onClick={() => {
+                                                        setCurrentView('signup');
+                                                        setAuthError('');
+                                                        setEmail('');
+                                                        setPassword('');
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                                                >
+                                                    Sign up
+                                                </button>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center pt-6 space-y-2">
+                                        <p className="text-sm text-slate-600 font-light">
+                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-slate-700 hover:text-slate-800 underline">fundament</a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Signup View
+            if (currentView === 'signup') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                        <div className="max-w-md mx-auto min-h-screen">
+                            <div className="p-8">
+                                <div className="text-center space-y-8 pt-12">
+                                    <h1 className="text-4xl font-light text-slate-700 mb-4">Join Sentirama</h1>
+                                    <p className="text-slate-600 text-lg leading-relaxed mb-8">
+                                        Create your account to start tracking your emotions
+                                    </p>
+
+                                    <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl shadow-sm space-y-6">
+                                        <h2 className="text-2xl font-light text-slate-700">Sign Up</h2>
+
+                                        {authError && (
+                                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-xl">
+                                                {authError}
+                                            </div>
+                                        )}
+
+                                        <form onSubmit={handleSignup} className="space-y-4">
+                                            <div>
+                                                <label className="block text-slate-700 mb-2 text-sm font-medium">Email</label>
+                                                <input
+                                                    type="email"
+                                                    placeholder="your@email.com"
+                                                    value={email}
+                                                    onChange={(e) => setEmail(e.target.value)}
+                                                    className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-slate-700 mb-2 text-sm font-medium">Password</label>
+                                                <input
+                                                    type="password"
+                                                    placeholder="••••••••"
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    className="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-300 focus:border-transparent bg-white"
+                                                    required
+                                                    minLength="6"
+                                                />
+                                                <p className="text-xs text-slate-500 mt-1">Minimum 6 characters</p>
+                                            </div>
+
+                                            <button
+                                                type="submit"
+                                                disabled={authLoading}
+                                                className="w-full bg-indigo-400 hover:bg-indigo-500 text-white py-4 px-8 rounded-xl font-light text-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                                            >
+                                                {authLoading ? 'Creating account...' : 'Create Account'}
+                                            </button>
+                                        </form>
+
+                                        <div className="text-center pt-4">
+                                            <p className="text-slate-600">
+                                                Already have an account?{' '}
+                                                <button
+                                                    onClick={() => {
+                                                        setCurrentView('login');
+                                                        setAuthError('');
+                                                        setEmail('');
+                                                        setPassword('');
+                                                    }}
+                                                    className="text-indigo-600 hover:text-indigo-700 font-medium"
+                                                >
+                                                    Sign in
+                                                </button>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center pt-6 space-y-2">
+                                        <p className="text-sm text-slate-600 font-light">
+                                            A project by <a href="https://www.fundament.es/sentirama" target="_blank" rel="noopener noreferrer" className="font-normal text-slate-700 hover:text-slate-800 underline">fundament</a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
             // Onboarding View
             if (currentView === 'onboarding') {
                 return (
@@ -583,9 +867,17 @@
                         <div className="max-w-md mx-auto min-h-screen">
                             <div className="p-8">
                                 <div className="text-center space-y-8 pt-8">
-                                    <h1 className="text-3xl font-light text-slate-700 mb-3">
-                                        {getGreeting()}{userName ? `, ${userName}` : ''}
-                                    </h1>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h1 className="text-3xl font-light text-slate-700">
+                                            {getGreeting()}{userName ? `, ${userName}` : ''}
+                                        </h1>
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="text-sm text-slate-500 hover:text-slate-700 px-3 py-1 rounded-lg hover:bg-slate-200 transition-all"
+                                        >
+                                            Sign out
+                                        </button>
+                                    </div>
                                     <p className="text-slate-500 text-lg">
                                         How are you feeling today?
                                     </p>
