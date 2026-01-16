@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // User documents
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if isOwner(userId);
+
+      // Admins can read all user profiles
+      allow read: if isAdmin();
+
+      // Emotion entries subcollection
+      match /emotions/{emotionId} {
+        // Users can create, read, update, and delete their own emotions
+        allow read, write: if isOwner(userId);
+
+        // Admins can read all emotion entries
+        allow read: if isAdmin();
+      }
+    }
+
+    // Admin documents
+    match /admins/{adminId} {
+      // Only existing admins can manage admin list
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Aggregated location data (public read for visualization)
+    match /locations/{areaId} {
+      // Anyone can read aggregated data (anonymous or authenticated)
+      allow read: if true;
+
+      // Only cloud functions can write aggregated data
+      allow write: if false;
+
+      match /aggregated/{docId} {
+        allow read: if true;
+        allow write: if false;
+      }
+    }
+
+    // Analytics and reports (admin only)
+    match /analytics/{reportId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only cloud functions
+
+      match /summary/{summaryId} {
+        allow read: if isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // System configuration
+    match /config/{configId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
