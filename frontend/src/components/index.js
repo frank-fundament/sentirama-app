@@ -5,11 +5,12 @@
  * import { Button, Input, Card } from '@components';
  */
 
-// UI Components (to be implemented)
-// export { default as Button } from './Button';
-// export { default as Input } from './Input';
-// export { default as Card } from './Card';
-// export { default as Toggle } from './Toggle';
+// UI Components
+export { Button } from './Button';
+export { Input } from './Input';
+export { Card } from './Card';
+export { Toggle } from './Toggle';
+export { IconButton } from './IconButton';
 
 // Emotion Components (to be implemented)
 // export { default as MoodWheelSelector } from './MoodWheelSelector';
