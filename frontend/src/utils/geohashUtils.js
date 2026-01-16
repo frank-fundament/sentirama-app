@@ -3,7 +3,7 @@
  * Handles GPS to geohash conversion and area name resolution
  */
 
-import Geohash from 'geohash-js';
+import * as Geohash from 'geohash';
 import { GEOHASH_PRECISION, LOCATION_PRECISION } from './constants';
 
 /**
