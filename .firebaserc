@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "sentirama-381f7"
+  },
+  "targets": {
+    "sentirama-381f7": {
+      "hosting": {
+        "frontend": [
+          "sentirama-381f7"
+        ],
+        "admin": [
+          "sentirama-admin"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
